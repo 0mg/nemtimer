@@ -1,3 +1,4 @@
+#include "debug.h"
 #include "nemtimer.h"
 #include "kbd.h"
 #include "util.h"
