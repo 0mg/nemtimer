@@ -44,6 +44,8 @@ static struct {
   debug[2] = {NULL, L"/debug"};
 } cmddef;
 
+void __start__(void) {ExitProcess(WinMain(GetModuleHandle(NULL), 0, NULL, 0));}
+
 LPTSTR secToString(LPTSTR buf, int sec) {
   if (sec >= 3600) {
     wsprintf(buf, TEXT("%d:%02d:%02d"), sec / 3600, (sec % 3600) / 60, sec % 60);
@@ -89,10 +91,6 @@ LPTSTR makeCmdOptionString(LPTSTR buf, SIZE_T sz) {
   secToString(timestr, atimer.out / MS);
   lstrcat(buf, timestr);
   return buf;
-}
-
-void __start__(void) {
-  ExitProcess(WinMain(GetModuleHandle(NULL), 0, NULL, 0));
 }
 
 int parseTimeString(LPTSTR ts) {
@@ -303,7 +301,6 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     case ID_BTN_NEW: //flow to follow
     case C_CMD_NEW: {
       if (counting) break;
-      SendMessage(hwnd, WM_COMMAND, C_CMD_STOP, 0);
       if (DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(ID_DLG_OPTION), hwnd, optProc) == IDOK) {
         SendMessage(hwnd, WM_COMMAND, C_CMD_START, 0);
       }
@@ -320,7 +317,6 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         ES_CONTINUOUS);
       stime = GetTickCount64();
       SendMessage(probar, PBM_SETRANGE32, 0, atimer.out);
-      //ShowWindow(timeview, TRUE); // if invisible by coder
       // # display flags
       TCHAR s[C_MAX_MSGTEXT];
       if (getLocaleString(s, ID_ICO_TASK + task, langtype)) SetWindowText(taskicon, s);
@@ -335,9 +331,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
       EnableWindow(exticon, TRUE);
       EnableWindow(GetDlgItem(hwnd, ID_BTN_NEW), FALSE);
       EnableWindow(GetDlgItem(hwnd, ID_BTN_STOP), TRUE);
-      EnableMenuItem(menubar, C_CMD_NEW, MF_GRAYED);
-      EnableMenuItem(menubar, C_CMD_STOP, MF_ENABLED);
-      // # suppliment
+      // # supplement
       SetFocus((HWND)GetDlgItem(hwnd, ID_BTN_STOP));
       SendMessage(hwnd, WM_TIMER, 0, 0); // redraw timertext
       // # main
@@ -362,14 +356,11 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
       EnableWindow(exticon, FALSE);
       EnableWindow(GetDlgItem(hwnd, ID_BTN_NEW), TRUE);
       EnableWindow(GetDlgItem(hwnd, ID_BTN_STOP), FALSE);
-      EnableMenuItem(menubar, C_CMD_NEW, MF_ENABLED);
-      EnableMenuItem(menubar, C_CMD_STOP, MF_GRAYED);
-      // # suppliment
+      // # supplement
       SetFocus((HWND)GetDlgItem(hwnd, ID_BTN_NEW));
       break;
     }
     case C_CMD_ABOUT: {
-      //DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(ID_DLG_ABOUT), hwnd, dlgProc);
       TCHAR v[C_MAX_MSGTEXT], t[C_MAX_MSGTEXT];
       wsprintf(v, C_VAL_APPNAME L" version %d.%d", C_VAL_APPVER);
       MSGBOXPARAMS mbpa;
@@ -427,14 +418,17 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
       HMENU menu = LoadMenu(GetModuleHandle(NULL), MAKEINTRESOURCE(ID_MNU_MAIN));
       langtype = CMDTOLANG(LOWORD(wp));
       modifyMenu(menu, langtype);
-      EnableMenuItem(menu, C_CMD_NEW, counting * MF_GRAYED);
-      EnableMenuItem(menu, C_CMD_STOP, !counting * MF_GRAYED);
       DestroyMenu(menubar);
       SetMenu(hwnd, menubar = menu);
       modifyCtrls(hwnd, langtype);
       break;
     }
     }
+    return 0;
+  }
+  case WM_INITMENU: {
+    EnableMenuItem(menubar, C_CMD_NEW, counting * MF_GRAYED);
+    EnableMenuItem(menubar, C_CMD_STOP, !counting * MF_GRAYED);
     return 0;
   }
   case WM_TIMER: {
@@ -453,7 +447,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     BYTE alt = C_KBD_ALT * !!(GetKeyState(VK_MENU) & 0x8000);
     BYTE shift = C_KBD_SHIFT * !!(GetKeyState(VK_SHIFT) & 0x8000);
     BYTE ctrl = C_KBD_CTRL * !!(GetKeyState(VK_CONTROL) & 0x8000);
-    char key = wp & 0xFF;
+    char key = LOWORD(wp);
     WORD id = Hotkey.getCmdIdByKeyCombo(key, alt | shift | ctrl);
     if (id) {
       PostMessage(hwnd, WM_COMMAND, id, 0);
@@ -473,13 +467,14 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cl, int cs) {
   argv = CommandLineToArgvW(GetCommandLineW(), &argc);
   {
     LPWSTR *a = argv, ts = NULL;
-    if (a[1]) {
+    if (argc > 1) {
       task = 0;
       awaken = 0;
       deepsleep = 0;
       debugMode = 0;
     }
-    while (*++a) {
+    for (int i = 1; i < argc; i++) {
+      a = argv + i;
       if (**a != '/') ts = *a, bootrun = TRUE;
       else if (lstrcmp(*a, cmddef.task[TASK_HIBER]) == 0) task = TASK_HIBER;
       else if (lstrcmp(*a, cmddef.task[TASK_DISPOFF]) == 0) task = TASK_DISPOFF;
@@ -490,10 +485,12 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cl, int cs) {
       else if (lstrcmp(*a, cmddef.debug[TRUE]) == 0) debugMode = TRUE;
     }
     int time = -1;
-    if (ts) time = parseTimeString(ts);
-    atimer.rest = atimer.out = time >= 0 ? time : ATIMEOUT_DEFAULT * MS;
+    if (ts) {
+      time = parseTimeString(ts);
+      atimer.rest = atimer.out = time >= 0 ? time : ATIMEOUT_DEFAULT * MS;
+      atimer.fixed = atimer.out / MS;
+    }
   }
-  atimer.fixed = atimer.out / MS;
   // Init vars
   secToString(atimer.text, atimer.fixed);
   // MENU & LANG & HOTKEY
@@ -508,7 +505,7 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cl, int cs) {
   wc.cbSize = sizeof(WNDCLASSEX);
   wc.cbWndExtra = DLGWINDOWEXTRA;
   wc.lpfnWndProc = mainWndProc;
-  wc.hInstance = GetModuleHandle(NULL);
+  wc.hInstance = hi;
   wc.hCursor = (HCURSOR)LoadImage(NULL, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED);
   wc.hIcon = (HICON)LoadImage(hi, MAKEINTRESOURCE(ID_ICO_EXE), IMAGE_ICON, 0, 0, 0);
   wc.hIconSm = (HICON)LoadImage(hi, MAKEINTRESOURCE(ID_ICO_EXE), IMAGE_ICON, 0, 0, 0);
@@ -525,7 +522,7 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cl, int cs) {
   MSG msg;
   while (GetMessage(&msg, NULL, 0, 0) > 0) {
     if (IsDialogMessage(hwnd, &msg)) {
-      ///* Bug: It be sent WM_KEYDOWN twice if GetFocus()==hwnd, why??
+      ///* Bug?: It be sent WM_KEYDOWN twice if GetFocus()==hwnd, why?
       if (msg.message >= WM_KEYFIRST && msg.message <= WM_KEYLAST) {
         if ((msg.message == WM_KEYDOWN && GetFocus() != hwnd)) {
           SendNotifyMessage(hwnd, msg.message, msg.wParam, msg.lParam);
