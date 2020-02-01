@@ -229,6 +229,19 @@ BOOL CALLBACK optProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     }
     return 1;
   }
+  case WM_NOTIFY: {
+    if (wp == ID_SPIN_TIME) {
+      TCHAR timestr[20];
+      GetDlgItemText(hwnd, ID_EDIT_TIME, timestr, 20);
+      int sec = parseTimeString(timestr) / MS;
+      int delta = (60 * 5) * -(((NMUPDOWN *)lp)->iDelta);
+      sec += delta;
+      if (sec < 0) sec = 0;
+      secToString(timestr, sec);
+      SetDlgItemText(hwnd, ID_EDIT_TIME, timestr);
+    }
+    return 1;
+  }
   }
   return 0;
 }
