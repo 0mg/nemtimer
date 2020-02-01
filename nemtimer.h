@@ -44,8 +44,7 @@
 #define ID_CAP_AWSYS    0xA18
 #define ID_DESC_AWSYS   0xA19
 #define ID_CHK_TASK     0xA1A
-// dialog: about
-#define ID_DLG_ABOUT    0xB01
+#define ID_SPIN_TIME    0xA1B
 
 // command ID, string ID. using with lang mask
 #define C_CMD_STOP      0x100

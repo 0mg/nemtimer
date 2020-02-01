@@ -69,6 +69,7 @@ FONT 9, "MS Shell Dlg"
   GROUPBOX "Timer and Operation", ID_GP_MAIN, 10, 10, 280, 110
   LTEXT "The device will sleep on the time rest is out.", ID_DESC_TIME, 20, 25, 265, 10
   RTEXT "&Time rest:", ID_CAP_TIME, 20, 40, 85, 10
+  CONTROL "", ID_SPIN_TIME, UPDOWN_CLASS, 0, 185, 35, 10, 20
   COMBOBOX ID_EDIT_TIME, 110, 38, 70, 100, CBS_DROPDOWN | WS_TABSTOP
   LTEXT "By environment, sleep could not be available, or device could to enter hibernation on the time out. It able to change the operation.", ID_DESC_TASK, 20, 60, 265, 30
   RTEXT "&Operation:", ID_CAP_TASK, 20, 85, 85, 10
