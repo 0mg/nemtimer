@@ -1,0 +1,146 @@
+#pragma code_page(65001)
+#include "nemtimer.h"
+
+1 RT_MANIFEST "nemtimer.exe.manifest"
+
+1 VERSIONINFO
+FILEVERSION C_VAL_APPVER
+FILETYPE VFT_APP {
+  BLOCK "StringFileInfo" {
+    BLOCK "04001200" {
+      VALUE "FileDescription", C_VAL_APPNAME
+      VALUE "OriginalFileName", C_VAL_APPCODE ".exe"
+    }
+  }
+  BLOCK "VarFileInfo" {
+    VALUE "Translation", 0x0400, 0x1200
+  }
+}
+
+ID_ICO_EXE ICON "nemtimer.ico"
+
+ID_DLG_MAIN DIALOG 0, 0, 200, 152
+FONT 9, "MS Shell Dlg"
+STYLE WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE | DS_CENTER
+CLASS C_VAL_APPNAME
+CAPTION C_VAL_APPNAME {
+  //GROUPBOX "", ID_TXT_TASK, 10, 0, 180, 35, BS_CENTER
+  CTEXT "-", ID_ICO_TASK, 10, 6, 20, 20
+  CTEXT "□", ID_ICO_AWDISP, 35, 6, 20, 20
+  CTEXT "👁", ID_ICO_AWSYS, 60, 6, 20, 20
+  CTEXT "🐜", ID_ICO_EXTRA, 85, 6, 20, 20, 0
+  CTEXT "---", 0, 0, 30, 200, 1, SS_SUNKEN
+  //RTEXT "", ID_TXT_EXTRA, 110, 10, 80, 10, SS_SUNKEN
+  //RTEXT "", ID_TXT_TASK, 110, 20, 80, 10, SS_SUNKEN
+  CTEXT "--:--:--", ID_TXT_TIMER, 10, 35, 180, 49
+  CONTROL "", ID_PB_MAIN, PROGRESS_CLASS, PBS_SMOOTH | PBS_SMOOTHREVERSE, 10, 89, 180, 15
+  DEFPUSHBUTTON "new...", ID_BTN_NEW, 10, 110, 50, 15
+  DEFPUSHBUTTON "stop", ID_BTN_STOP, 140, 110, 50, 15
+}
+
+ID_MNU_MAIN MENU {
+  POPUP "&File" {
+    MENUITEM "Save &As...", C_CMD_SAVEAS
+    MENUITEM SEPARATOR
+    MENUITEM "Exit", C_CMD_EXIT
+  }
+  POPUP "&Control" {
+    MENUITEM "&New...", C_CMD_NEW
+    MENUITEM "&Stop", C_CMD_STOP
+  }
+  POPUP "&Tool" {
+    POPUP "言語🌎(&Language)" {
+      MENUITEM "&English", C_CMD_LANG_DEFAULT
+      MENUITEM "日本語(&J)", C_CMD_LANG_JA
+    }
+    MENUITEM SEPARATOR
+    MENUITEM "Shut off &display", C_CMD_DISPOFF
+  }
+  POPUP "&Help" {
+    MENUITEM "&About...", C_CMD_ABOUT
+  }
+}
+
+ID_DLG_OPTION DIALOG 0, 0, 300, 250
+STYLE WS_SYSMENU | WS_VISIBLE | DS_CENTER | DS_MODALFRAME
+CAPTION "New timer"
+FONT 9, "MS Shell Dlg"
+{
+  GROUPBOX "Timer and Operation", ID_GP_MAIN, 10, 10, 280, 110
+  LTEXT "The device will sleep on the time rest is out.", ID_DESC_TIME, 20, 25, 265, 10
+  RTEXT "&Time rest:", ID_CAP_TIME, 20, 40, 85, 10
+  COMBOBOX ID_EDIT_TIME, 110, 38, 70, 100, CBS_DROPDOWN | WS_TABSTOP
+  LTEXT "By environment, sleep could not be available, or device could to enter hibernation on the time out. It able to change the operation.", ID_DESC_TASK, 20, 60, 265, 30
+  RTEXT "&Operation:", ID_CAP_TASK, 20, 85, 85, 10
+  COMBOBOX ID_EDIT_TASK, 110, 83, 100, 100, CBS_DROPDOWNLIST | WS_TABSTOP
+  AUTOCHECKBOX "Disable auto-&resume from sleeping", ID_CHK_TASK, 110, 102, 120, 10
+  GROUPBOX "Option", ID_GP_AWAKE, 10, 125, 280, 95
+  LTEXT "System may shut off display or enter sleep in the idle time. It able to supress them.", ID_DESC_AWAKE, 20, 140, 265, 30
+  RTEXT "Shut off &display:", ID_CAP_AWDISP, 20, 165, 85, 10
+  COMBOBOX ID_EDIT_AWDISP, 110, 163, 60, 100, CBS_DROPDOWNLIST | WS_TABSTOP
+  RTEXT "&Sleep:", ID_CAP_AWSYS, 20, 180, 85, 9
+  COMBOBOX ID_EDIT_AWSYS, 110, 178, 60, 100, CBS_DROPDOWNLIST | WS_TABSTOP
+  LTEXT "Timer may stop working when display shut off without sleep suppression.", ID_DESC_AWSYS, 20, 195, 265, 20
+  DEFPUSHBUTTON "Start timer", C_CMD_START, 110, 225, 75, 15
+  PUSHBUTTON "Cancel", IDCANCEL, 240, 225, 50, 15
+}
+
+ID_DLG_ABOUT DIALOG 0, 0, 200, 100
+STYLE WS_SYSMENU | WS_VISIBLE | DS_CENTERMOUSE
+FONT 9, "MS Shell Dlg"
+CAPTION C_VAL_APPNAME
+{
+  DEFPUSHBUTTON "OK", IDOK, 20, 25, 75, 15
+}
+
+STRINGTABLE {
+  ID_ICO_SLEEP "💤"
+  ID_ICO_HIBER "🕘"
+  ID_ICO_DISPOFF "■"
+  ID_BTN_STOP "Stop"
+  ID_BTN_NEW "New..."
+  C_STR_ABOUT_CAP "About " C_VAL_APPNAME
+  IDOK "OK"
+  IDCANCEL "Cancel"
+  // Dialog: Option
+  C_STR_DISPOFF "Shut off display"
+  C_STR_SLEEP "Sleep"
+  C_STR_HIBER "Hibernate"
+  C_STR_UNDEFINED "Undefined"
+  C_STR_AUTO "Auto"
+  C_STR_SUPRESS "Suppress"
+  C_LANG_JA | IDCANCEL "キャンセル"
+  C_LANG_JA | C_CMD_START "タイマー開始"
+  C_LANG_JA | ID_GP_MAIN "タイマーと実行内容"
+  C_LANG_JA | ID_DESC_TIME "指定した待機時間が経過すると、コンピュータはスリープ状態に移行します。"
+  C_LANG_JA | ID_CAP_TIME "待機時間(&T):"
+  C_LANG_JA | ID_DESC_TASK "環境によっては、スリープが利用できない場合や、スリープ状態ではなく休止状態に移行してしまう場合があります。次の項目で、実行内容の変更ができます。"
+  C_LANG_JA | ID_CAP_TASK "実行内容(&O):"
+  C_LANG_JA | ID_CHK_TASK "スリープからの自動復帰を無効にする(&R)"
+  C_LANG_JA | ID_GP_AWAKE "オプション"
+  C_LANG_JA | ID_DESC_AWAKE "システムは、アイドル状態になってから一定時間が経過すると、自動でディスプレイの電源を切ったり、スリープ状態に移行したりすることがあります。次の項目で、それらを抑止できます。"
+  C_LANG_JA | ID_CAP_AWDISP "ディスプレイの電源を切る(&D):"
+  C_LANG_JA | ID_CAP_AWSYS "スリープ(&S):"
+  C_LANG_JA | ID_DESC_AWSYS "スリープが抑止されていない状態でディスプレイの電源が切れると、タイマーが機能しなくなる場合があります。"
+  C_LANG_JA | C_STR_DISPOFF "ディスプレイの電源を切る"
+  C_LANG_JA | C_STR_SLEEP "スリープ"
+  C_LANG_JA | C_STR_HIBER "休止状態"
+  C_LANG_JA | C_STR_UNDEFINED "不明"
+  C_LANG_JA | C_STR_AUTO "自動"
+  C_LANG_JA | C_STR_SUPRESS "抑止する"
+  //
+  C_LANG_JA | C_CMD_SAVEAS "名前を付けて保存(&A)..."
+  C_LANG_JA | C_CMD_EXIT "終了(&X)"
+  C_LANG_JA | C_CMD_NEW "新規開始(&N)..."
+  C_LANG_JA | C_CMD_STOP "停止(&S)"
+  C_LANG_JA | ID_BTN_NEW "新規開始..."
+  C_LANG_JA | ID_BTN_STOP "停止"
+  C_LANG_JA | C_CMD_DISPOFF "ディスプレイの電源を切る(&D)"
+  C_LANG_JA | C_CMD_ABOUT C_VAL_APPNAME " のバージョン情報(&A)..."
+  C_LANG_JA | C_STR_FILE "ファイル(&F)"
+  C_LANG_JA | C_STR_CTRL "操作(&C)"
+  C_LANG_JA | C_STR_TOOL "ツール(&T)"
+  C_LANG_JA | C_STR_HELP "ヘルプ(&H)"
+  C_LANG_JA | C_STR_ABOUT_CAP C_VAL_APPNAME " のバージョン情報"
+  C_LANG_JA | ID_DLG_OPTION "新規タイマー"
+}
