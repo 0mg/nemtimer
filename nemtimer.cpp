@@ -29,6 +29,7 @@ static int task = TASK_SLEEP;
 static int awaken = AWAKE_SYS;
 static BOOL deepsleep = FALSE;
 static BOOL debugMode = FALSE;
+static BOOL liteMode = FALSE;
 
 static struct {
   int fixed = ATIMEOUT_DEFAULT;
@@ -42,7 +43,8 @@ static struct {
   task[3] = {NULL, L"/h", L"/d"},
   awaken[4] = {NULL, L"/as", L"/ad", L"/a"},
   deep[2] = {NULL, L"/deep"},
-  debug[2] = {NULL, L"/debug"};
+  debug[2] = {NULL, L"/debug"},
+  lite[2] = {NULL, L"/lite"};
 } cmddef;
 
 void __start__(void) {ExitProcess(WinMain(GetModuleHandle(NULL), 0, NULL, 0));}
@@ -432,7 +434,11 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     EnableMenuItem(menubar, C_CMD_STOP, !counting * MF_GRAYED);
     return 0;
   }
+  case WM_SIZE: if (liteMode) {/* GOTO WM_TIMER */} else return 0;
   case WM_TIMER: {
+    if (liteMode) {
+      if (counting && msg == WM_SIZE) {} else return 0;
+    }
     // # draw timer
     SendMessage(probar, PBM_SETPOS, atimer.rest, 0);
     setTBProgress(hwnd, atimer.rest, atimer.out);
@@ -484,6 +490,7 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cl, int cs) {
       else if (lstrcmp(*a, cmddef.awaken[AWAKE_SYS | AWAKE_DISP]) == 0) awaken = AWAKE_SYS | AWAKE_DISP;
       else if (lstrcmp(*a, cmddef.deep[TRUE]) == 0) deepsleep = TRUE;
       else if (lstrcmp(*a, cmddef.debug[TRUE]) == 0) debugMode = TRUE;
+      else if (lstrcmp(*a, cmddef.lite[TRUE]) == 0) liteMode = TRUE;
     }
     int time = -1;
     if (ts) {
