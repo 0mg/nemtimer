@@ -11,7 +11,7 @@ NEMTimer とは、Windows 用のソフトウェアです。
 
 * [version 1.2](../../releases/download/v1.2/nemtim12.zip)
 
-[更新履歴](../../release)
+[更新履歴](../../releases)
 
 ## インストール
 
