@@ -76,7 +76,7 @@ FONT 9, "MS Shell Dlg"
   COMBOBOX ID_EDIT_TASK, 110, 83, 100, 100, CBS_DROPDOWNLIST | WS_TABSTOP
   AUTOCHECKBOX "Disable auto-&resume from sleeping", ID_CHK_TASK, 110, 102, 120, 10
   GROUPBOX "Option", ID_GP_AWAKE, 10, 125, 280, 95
-  LTEXT "System may shut off display or enter sleep in the idle time. It able to supress them.", ID_DESC_AWAKE, 20, 140, 265, 30
+  LTEXT "System may shut off display or enter sleep in the idle time. It able to suppress them.", ID_DESC_AWAKE, 20, 140, 265, 30
   RTEXT "Shut off &display:", ID_CAP_AWDISP, 20, 165, 85, 10
   COMBOBOX ID_EDIT_AWDISP, 110, 163, 60, 100, CBS_DROPDOWNLIST | WS_TABSTOP
   RTEXT "&Sleep:", ID_CAP_AWSYS, 20, 180, 85, 9
