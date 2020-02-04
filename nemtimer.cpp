@@ -12,8 +12,6 @@
 #define LANGTOCMD(lang) (0xFF0 | lang >> 12)
 #define APPEND(dst, src) SendMessage((dst), CB_ADDSTRING, 0, (LPARAM)(src))
 
-static int argc;
-static LPWSTR *argv = NULL;
 static WORD langtype = C_LANG_DEFAULT;
 static BOOL atimeover = FALSE;
 static BOOL bootrun = FALSE;
@@ -472,8 +470,9 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
 
 int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cl, int cs) {
   // command line option
-  argv = CommandLineToArgvW(GetCommandLineW(), &argc);
   {
+    int argc;
+    LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     LPWSTR *a = argv, ts = NULL;
     if (argc > 1) {
       task = 0;
@@ -499,6 +498,7 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cl, int cs) {
       atimer.rest = atimer.out = time >= 0 ? time : ATIMEOUT_DEFAULT * MS;
       atimer.fixed = atimer.out / MS;
     }
+    LocalFree(argv);
   }
   // Init vars
   secToString(atimer.text, atimer.fixed);
