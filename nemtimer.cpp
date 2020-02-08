@@ -158,16 +158,6 @@ void modifyCtrls(HWND hwnd, WORD lang) {
   if (getLocaleString(s, ID_ICO_TASK + task, langtype)) SetDlgItemText(hwnd, ID_ICO_TASK, s);
 }
 
-BOOL CALLBACK dlgProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
-  if (msg == WM_INITDIALOG) {
-    TCHAR s[C_MAX_MSGTEXT];
-    SetWindowText(hwnd, getLocaleString(s, C_STR_ABOUT_CAP, langtype));
-    return 1;
-  }
-  if (msg == WM_COMMAND) return (EndDialog(hwnd, LOWORD(wp)), 1);
-  return 0;
-}
-
 BOOL CALLBACK optProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
   static HWND times, tasks, awdisp, awsys, deep;
   switch (msg) {
@@ -492,9 +482,8 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cl, int cs) {
       else if (lstrcmp(*a, cmddef.debug[TRUE]) == 0) debugMode = TRUE;
       else if (lstrcmp(*a, cmddef.lite[TRUE]) == 0) liteMode = TRUE;
     }
-    int time = -1;
     if (ts) {
-      time = parseTimeString(ts);
+      int time = parseTimeString(ts);
       atimer.rest = atimer.out = time >= 0 ? time : ATIMEOUT_DEFAULT * MS;
       atimer.fixed = atimer.out / MS;
     }
