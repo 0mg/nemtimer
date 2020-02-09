@@ -311,7 +311,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
       if (counting) break;
       // # main
       KillTimer(hwnd, WTIMER_ID);
-      SetTimer(hwnd, WTIMER_ID, WTIMER_OUT, NULL);
+      SetTimer(hwnd, WTIMER_ID, liteMode ? 60000 : WTIMER_OUT, NULL);
       SetThreadExecutionState(
         (awaken & ES_DISPLAY_REQUIRED) |
         (awaken & ES_SYSTEM_REQUIRED) |
@@ -335,6 +335,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
       // # supplement
       SetFocus((HWND)GetDlgItem(hwnd, ID_BTN_STOP));
       SendMessage(hwnd, WM_TIMER, 0, 0); // redraw timertext
+      PostMessage(hwnd, WM_TIMER, 0, 0); // set taskbar progress on bootrun
       // # main
       counting = TRUE; // After redraw timertext
       break;
@@ -432,11 +433,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     EnableMenuItem(menubar, C_CMD_STOP, !counting * MF_GRAYED);
     return 0;
   }
-  case WM_SIZE: if (liteMode) {/* GOTO WM_TIMER */} else return 0;
   case WM_TIMER: {
-    if (liteMode) {
-      if (counting && msg == WM_SIZE) {} else return 0;
-    }
     // # draw timer
     SendMessage(probar, PBM_SETPOS, atimer.rest, 0);
     setTBProgress(hwnd, atimer.rest, atimer.out);
