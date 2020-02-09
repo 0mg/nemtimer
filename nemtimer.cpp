@@ -463,6 +463,7 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cl, int cs) {
       awaken = 0;
       deepsleep = 0;
       debugMode = 0;
+      liteMode = 0;
     }
     for (int i = 1; i < argc; i++) {
       a = argv + i;
