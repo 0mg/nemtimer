@@ -7,6 +7,7 @@
 #define ATIMEOUT_DEFAULT 7200
 #define WTIMER_ID 1
 #define WTIMER_OUT 200
+#define WTIMER_LITE_ID 2
 #define WTIMER_LITE_OUT 60000
 #define OVERTIME -3000
 #define CMDTOLANG(cmd) ((cmd & 0xF) << 12)
@@ -234,7 +235,6 @@ BOOL CALLBACK optProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
 
 LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
   static ULONGLONG stime = 0;
-  static int countLite = 0;
   static BOOL counting = FALSE;
   static HWND probar, timeview, taskicon, dispicon, sysicon, exticon;
   static HMENU menubar;
@@ -258,6 +258,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         counting = FALSE;
         atimeover = TRUE;
         KillTimer(hwnd, WTIMER_ID);
+        KillTimer(hwnd, WTIMER_LITE_ID);
         atimer.rest = 0;
         ShowWindow(hwnd, FALSE);
         PostMessage(hwnd, WM_CLOSE, 0, 0);
@@ -312,13 +313,14 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
       if (counting) break;
       // # main
       KillTimer(hwnd, WTIMER_ID);
+      KillTimer(hwnd, WTIMER_LITE_ID);
       SetTimer(hwnd, WTIMER_ID, WTIMER_OUT, NULL);
+      if (liteMode) SetTimer(hwnd, WTIMER_LITE_ID, WTIMER_LITE_OUT, NULL);
       SetThreadExecutionState(
         (awaken & ES_DISPLAY_REQUIRED) |
         (awaken & ES_SYSTEM_REQUIRED) |
         ES_CONTINUOUS);
       stime = GetTickCount64();
-      countLite = WTIMER_LITE_OUT / WTIMER_OUT;
       SendMessage(probar, PBM_SETRANGE32, 0, atimer.out);
       // # display flags
       TCHAR s[C_MAX_MSGTEXT];
@@ -337,6 +339,8 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
       // # supplement
       SetFocus((HWND)GetDlgItem(hwnd, ID_BTN_STOP));
       SendMessage(hwnd, WM_TIMER, 0, 0); // redraw timertext
+      // set taskbar progress on bootrun
+      PostMessage(hwnd, WM_TIMER, 0, 0);
       // # main
       counting = TRUE; // After redraw timertext
       break;
@@ -347,6 +351,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
       // # main
       counting = FALSE;
       KillTimer(hwnd, WTIMER_ID);
+      KillTimer(hwnd, WTIMER_LITE_ID);
       SetThreadExecutionState(ES_CONTINUOUS);
       SendMessage(probar, PBM_SETPOS, 0, 0);
       setTBProgress(hwnd, 0, 0);
@@ -429,15 +434,16 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     }
     return 0;
   }
-  case WM_INITMENU: {
-    EnableMenuItem(menubar, C_CMD_NEW, counting * MF_GRAYED);
-    EnableMenuItem(menubar, C_CMD_STOP, !counting * MF_GRAYED);
-    return 0;
+  case WM_SIZE: {
+    if (counting && liteMode) {
+      wp = 0;
+      // goto WM_TIMER
+    } else return 0;
   }
   case WM_TIMER: {
     if (liteMode) {
-      if (counting && ++countLite > (WTIMER_LITE_OUT / WTIMER_OUT)) {
-        countLite = 0;
+      if (wp == 0 || wp == WTIMER_LITE_ID) {
+        // draw
       } else return 0;
     }
     // # draw timer
@@ -448,6 +454,11 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     TCHAR s[C_MAX_MSGTEXT];
     wsprintf(s, L"%s " C_VAL_APPNAME, atimer.text);
     SetWindowText(hwnd, s);
+    return 0;
+  }
+  case WM_INITMENU: {
+    EnableMenuItem(menubar, C_CMD_NEW, counting * MF_GRAYED);
+    EnableMenuItem(menubar, C_CMD_STOP, !counting * MF_GRAYED);
     return 0;
   }
   case WM_DESTROY: {
