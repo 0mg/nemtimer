@@ -13,8 +13,6 @@
 #define LANGTOCMD(lang) (0xFF0 | lang >> 12)
 #define APPEND(dst, src) SendMessage((dst), CB_ADDSTRING, 0, (LPARAM)(src))
 
-static int argc;
-static LPWSTR *argv = NULL;
 static WORD langtype = C_LANG_DEFAULT;
 static BOOL atimeover = FALSE;
 static BOOL bootrun = FALSE;
@@ -126,12 +124,13 @@ int parseTimeString(LPTSTR ts) {
   return time;
 }
 
-void registerHotkeys() {
+HACCEL registerHotkeys() {
   Hotkey.assign(C_CMD_EXIT, VK_ESCAPE, 0);
   Hotkey.assign(C_CMD_DISPOFF, 'B', C_KBD_CTRL);
   Hotkey.assign(C_CMD_NEW, 'N', C_KBD_CTRL);
   Hotkey.assign(C_CMD_SAVEAS, 'E', C_KBD_CTRL);
   Hotkey.assign(C_CMD_AWAKEN, 'A', C_KBD_CTRL);
+  return CreateAcceleratorTable(Hotkey.hotkeylist, Hotkey.entries);
 }
 
 void modifyMenu(HMENU menu, WORD lang) {
@@ -158,16 +157,6 @@ void modifyCtrls(HWND hwnd, WORD lang) {
     ids++;
   }
   if (getLocaleString(s, ID_ICO_TASK + task, langtype)) SetDlgItemText(hwnd, ID_ICO_TASK, s);
-}
-
-BOOL CALLBACK dlgProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
-  if (msg == WM_INITDIALOG) {
-    TCHAR s[C_MAX_MSGTEXT];
-    SetWindowText(hwnd, getLocaleString(s, C_STR_ABOUT_CAP, langtype));
-    return 1;
-  }
-  if (msg == WM_COMMAND) return (EndDialog(hwnd, LOWORD(wp)), 1);
-  return 0;
 }
 
 BOOL CALLBACK optProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
@@ -462,18 +451,6 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     SetWindowText(hwnd, s);
     return 0;
   }
-  case WM_KEYDOWN: {
-    if (lp & 0x40000000) return 0; // ignore repeated press
-    BYTE alt = C_KBD_ALT * !!(GetKeyState(VK_MENU) & 0x8000);
-    BYTE shift = C_KBD_SHIFT * !!(GetKeyState(VK_SHIFT) & 0x8000);
-    BYTE ctrl = C_KBD_CTRL * !!(GetKeyState(VK_CONTROL) & 0x8000);
-    char key = LOWORD(wp);
-    WORD id = Hotkey.getCmdIdByKeyCombo(key, alt | shift | ctrl);
-    if (id) {
-      PostMessage(hwnd, WM_COMMAND, id, 0);
-    }
-    return 0;
-  }
   case WM_DESTROY: {
     PostQuitMessage(0);
     return 0;
@@ -484,8 +461,9 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
 
 int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cl, int cs) {
   // command line option
-  argv = CommandLineToArgvW(GetCommandLineW(), &argc);
   {
+    int argc;
+    LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     LPWSTR *a = argv, ts = NULL;
     if (argc > 1) {
       task = 0;
@@ -505,17 +483,17 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cl, int cs) {
       else if (lstrcmp(*a, cmddef.debug[TRUE]) == 0) debugMode = TRUE;
       else if (lstrcmp(*a, cmddef.lite[TRUE]) == 0) liteMode = TRUE;
     }
-    int time = -1;
     if (ts) {
-      time = parseTimeString(ts);
+      int time = parseTimeString(ts);
       atimer.rest = atimer.out = time >= 0 ? time : ATIMEOUT_DEFAULT * MS;
       atimer.fixed = atimer.out / MS;
     }
+    LocalFree(argv);
   }
   // Init vars
   secToString(atimer.text, atimer.fixed);
   // MENU & LANG & HOTKEY
-  registerHotkeys();
+  HACCEL haccel = registerHotkeys();
   switch (LANGIDFROMLCID(GetUserDefaultLCID())) {
   case 0x0411: langtype = C_LANG_JA; break;
   default: langtype = C_LANG_DEFAULT; break;
@@ -542,13 +520,8 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cl, int cs) {
   // main
   MSG msg;
   while (GetMessage(&msg, NULL, 0, 0) > 0) {
-    if (IsDialogMessage(hwnd, &msg)) {
-      ///* Bug?: It be sent WM_KEYDOWN twice if GetFocus()==hwnd, why?
-      if (msg.message >= WM_KEYFIRST && msg.message <= WM_KEYLAST) {
-        if ((msg.message == WM_KEYDOWN && GetFocus() != hwnd)) {
-          SendNotifyMessage(hwnd, msg.message, msg.wParam, msg.lParam);
-        }
-      }
+    if (TranslateAccelerator(hwnd, haccel, &msg)) {
+    } else if (IsDialogMessage(hwnd, &msg)) {
     } else {
       TranslateMessage(&msg);
       DispatchMessage(&msg);

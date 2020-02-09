@@ -11,17 +11,13 @@
 #define C_MAX_MENUTEXT (C_MAX_ITEMTEXT + C_MAX_KEYCOMBOTEXT)
 #define C_MAX_MSGTEXT 0x401
 
-typedef struct tagHOTKEYDATA {
-  WORD id;
-  char key;
-  BYTE mod;
-} HOTKEYDATA;
+typedef ACCEL HOTKEYDATA;
 
 static class tagHotkey {
 private:
+public:
   HOTKEYDATA hotkeylist[99];
   int entries = 0;
-public:
   void assign(WORD id, char key, BYTE mod) {
     if (entries >= sizeof(hotkeylist) / sizeof(HOTKEYDATA)) {
       SetLastError(ERROR_VOLMGR_MAXIMUM_REGISTERED_USERS);
@@ -29,15 +25,15 @@ public:
       return;
     }
     HOTKEYDATA *tgt = &hotkeylist[entries++];
-    tgt->id = id;
+    tgt->cmd = id;
     tgt->key = key;
-    tgt->mod = mod;
+    tgt->fVirt = mod | FVIRTKEY;
   }
   WORD getCmdIdByKeyCombo(char key, BYTE mod) {
     for (int i = 0; i < entries; i++) {
       HOTKEYDATA *m = &hotkeylist[i];
-      if (m->key == key && m->mod == mod) {
-        return m->id;
+      if (m->key == key && m->fVirt == mod) {
+        return m->cmd;
       }
     }
     return 0;
@@ -45,7 +41,7 @@ public:
   BOOL getHOTKEYDATA(HOTKEYDATA *srcdst) {
     for (int i = 0; i < entries; i++) {
       HOTKEYDATA *m = &hotkeylist[i];
-      if (m->id == srcdst->id) {
+      if (m->cmd == srcdst->cmd) {
         *srcdst = *m;
         return TRUE;
       }
@@ -55,9 +51,9 @@ public:
 } Hotkey;
 
 enum C_KBD_MOD {
-  C_KBD_CTRL = 1,
-  C_KBD_SHIFT = 2,
-  C_KBD_ALT = 4
+  C_KBD_CTRL = FCONTROL,
+  C_KBD_SHIFT = FSHIFT,
+  C_KBD_ALT = FALT
 };
 void strifyKeyCombo(LPTSTR dst, char key, BYTE mod) {
   LPTSTR alt = mod & C_KBD_ALT ? TEXT("Alt+") : NULL;
@@ -106,11 +102,11 @@ void setMenuText(HMENU menu, WORD id, WORD lang, int pos = 0) {
     });
   }
   // get key combo: ('A', C_KBD_CTRL) by id
-  HOTKEYDATA kmap = {id, 0, 0};
+  HOTKEYDATA kmap = {0, 0, id};
   if (Hotkey.getHOTKEYDATA(&kmap)) {
     // get text:"Ctrl+A" by ('A', C_KBD_CTRL)
     TCHAR keytext[C_MAX_KEYCOMBOTEXT];
-    strifyKeyCombo(keytext, kmap.key, kmap.mod);
+    strifyKeyCombo(keytext, kmap.key, kmap.fVirt);
     // join text:"すべて選択\tCtrl+A"
     lstrcat(fulltext, TEXT("\t"));
     lstrcat(fulltext, keytext);
