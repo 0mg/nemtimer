@@ -84,10 +84,6 @@ LPTSTR makeCmdOptionString(LPTSTR buf, SIZE_T sz) {
     lstrcat(buf, cmddef.deep[deepsleep]); // deepsleep = 0,1
     lstrcat(buf, L" ");
   }
-  if (cmddef.debug[debugMode]) {
-    lstrcat(buf, cmddef.debug[debugMode]); // debug = 0,1
-    lstrcat(buf, L" ");
-  }
   TCHAR timestr[99];
   secToString(timestr, atimer.out / MS);
   lstrcat(buf, timestr);
