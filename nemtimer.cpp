@@ -8,6 +8,7 @@
 #define ATIMEOUT_DEFAULT 7200
 #define WTIMER_ID 1
 #define WTIMER_OUT 200
+#define WTIMER_LITE_OUT 60000
 #define OVERTIME -3000
 #define CMDTOLANG(cmd) ((cmd & 0xF) << 12)
 #define LANGTOCMD(lang) (0xFF0 | lang >> 12)
@@ -234,6 +235,7 @@ BOOL CALLBACK optProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
 
 LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
   static ULONGLONG stime = 0;
+  static int countLite = 0;
   static BOOL counting = FALSE;
   static HWND probar, timeview, taskicon, dispicon, sysicon, exticon;
   static HMENU menubar;
@@ -317,6 +319,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         (awaken & ES_SYSTEM_REQUIRED) |
         ES_CONTINUOUS);
       stime = GetTickCount64();
+      countLite = WTIMER_LITE_OUT / WTIMER_OUT;
       SendMessage(probar, PBM_SETRANGE32, 0, atimer.out);
       // # display flags
       TCHAR s[C_MAX_MSGTEXT];
@@ -432,10 +435,11 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     EnableMenuItem(menubar, C_CMD_STOP, !counting * MF_GRAYED);
     return 0;
   }
-  case WM_SIZE: if (liteMode) {/* GOTO WM_TIMER */} else return 0;
   case WM_TIMER: {
     if (liteMode) {
-      if (counting && msg == WM_SIZE) {} else return 0;
+      if (counting && ++countLite > (WTIMER_LITE_OUT / WTIMER_OUT)) {
+        countLite = 0;
+      } else return 0;
     }
     // # draw timer
     SendMessage(probar, PBM_SETPOS, atimer.rest, 0);
