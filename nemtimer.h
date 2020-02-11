@@ -5,7 +5,7 @@
 
 // const value
 #define C_VAL_APPNAME   TEXT("NEMTimer")
-#define C_VAL_APPVER    1,35,100,0
+#define C_VAL_APPVER    1,36,0,0
 #define C_VAL_APPCODE   "nemtimer"
 
 #define ID_ICO_EXE      0x001
