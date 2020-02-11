@@ -12,7 +12,7 @@
 #define WTIMER_LITE_OUT 60000
 #define OVERTIME -3000
 #define CMDTOLANG(cmd) ((cmd & 0xF) << 12)
-#define LANGTOCMD(lang) (0xFF0 | lang >> 12)
+#define LANGTOCMD(lang) (0xFF0 | (lang >> 12))
 #define APPEND(dst, src) SendMessage((dst), CB_ADDSTRING, 0, (LPARAM)(src))
 
 static WORD langtype = C_LANG_DEFAULT;
