@@ -12,6 +12,7 @@
 #define OVERTIME -3000
 #define CMDTOLANG(cmd) ((cmd & 0xF) << 12)
 #define LANGTOCMD(lang) (0xFF0 | (lang >> 12))
+#define LANGTOI(lang) (lang >> 12)
 #define APPEND(dst, src) SendMessage((dst), CB_ADDSTRING, 0, (LPARAM)(src))
 
 static WORD langtype = C_LANG_DEFAULT;
@@ -29,6 +30,7 @@ static int awaken = AWAKE_SYS;
 static BOOL deepsleep = FALSE;
 static BOOL debugMode = FALSE;
 static BOOL liteMode = FALSE;
+static BOOL langset = FALSE;
 
 static struct {
   int fixed = ATIMEOUT_DEFAULT;
@@ -43,7 +45,8 @@ static struct {
   awaken[4] = {NULL, L"/as", L"/ad", L"/a"},
   deep[2] = {NULL, L"/deep"},
   debug[2] = {NULL, L"/debug"},
-  lite[2] = {NULL, L"/lite"};
+  lite[2] = {NULL, L"/lite"},
+  lang[2] = {L"/en", L"/ja"};
 } cmddef;
 
 void __start__(void) {ExitProcess(WinMain(GetModuleHandle(NULL), 0, NULL, 0));}
@@ -73,6 +76,10 @@ LPTSTR makeLinkName(LPTSTR buf) {
 
 LPTSTR makeCmdOptionString(LPTSTR buf, SIZE_T sz) {
   SecureZeroMemory(buf, sz);
+  if (langset) {
+    lstrcat(buf, cmddef.lang[LANGTOI(langtype)]);
+    lstrcat(buf, L" ");
+  }
   if (cmddef.task[task]) {
     lstrcat(buf, cmddef.task[task]); // task = 0,1,2
     lstrcat(buf, L" ");
@@ -290,7 +297,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     SendMessage(exticon, WM_SETFONT, (WPARAM)iconfont, TRUE);
     ShowWindow(exticon, debugMode);
     // # Reset menu & dialog
-    SendMessage(hwnd, WM_COMMAND, LANGTOCMD(langtype), 0);
+    SendMessage(hwnd, WM_COMMAND, LANGTOCMD(langtype), 1);
     // # Boot
     if (bootrun) {
       SendMessage(hwnd, WM_COMMAND, C_CMD_START, 0);
@@ -429,6 +436,8 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
       DestroyMenu(menubar);
       SetMenu(hwnd, menubar = menu);
       modifyCtrls(hwnd, langtype);
+      // for command option
+      if (!(HIWORD(wp) == 0 && lp != 0)) langset = TRUE;
       break;
     }
     }
@@ -493,6 +502,12 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cl, int cs) {
       else if (lstrcmp(*a, cmddef.deep[TRUE]) == 0) deepsleep = TRUE;
       else if (lstrcmp(*a, cmddef.debug[TRUE]) == 0) debugMode = TRUE;
       else if (lstrcmp(*a, cmddef.lite[TRUE]) == 0) liteMode = TRUE;
+      // # lang
+      else if (lstrcmp(*a, cmddef.lang[LANGTOI(C_LANG_DEFAULT)]) == 0) {
+        langtype = C_LANG_DEFAULT, langset = TRUE;
+      } else if (lstrcmp(*a, cmddef.lang[LANGTOI(C_LANG_JA)]) == 0) {
+        langtype = C_LANG_JA, langset = TRUE;
+      }
     }
     if (ts) {
       int time = parseTimeString(ts);
@@ -505,7 +520,7 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cl, int cs) {
   secToString(atimer.text, atimer.fixed);
   // MENU & LANG & HOTKEY
   HACCEL haccel = registerHotkeys();
-  switch (LANGIDFROMLCID(GetUserDefaultLCID())) {
+  if (!langset) switch (LANGIDFROMLCID(GetUserDefaultLCID())) {
   case 0x0411: langtype = C_LANG_JA; break;
   default: langtype = C_LANG_DEFAULT; break;
   }
